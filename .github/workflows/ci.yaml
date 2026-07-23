@@ -1,0 +1,70 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "microservices/**"
+      - ".github/workflows/ci.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "microservices/**"
+      - ".github/workflows/ci.yaml"
+  workflow_dispatch:
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Discover every buildable service under microservices/*/pom.xml so new
+  # services are picked up automatically — no edits to this workflow needed.
+  # -------------------------------------------------------------------------
+  discover:
+    name: Discover services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set
+        run: |
+          services=$(find microservices -maxdepth 2 -name pom.xml -printf '%h\n' \
+            | sed 's|microservices/||' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "matrix={\"service\":$services}" >> "$GITHUB_OUTPUT"
+          echo "Discovered services: $services"
+
+  # -------------------------------------------------------------------------
+  # Build + test each service (Maven runs the JUnit suite), then verify the
+  # Docker image builds. No registry secrets required (build only, no push).
+  # -------------------------------------------------------------------------
+  build:
+    name: Build ${{ matrix.service }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Maven build & test — ${{ matrix.service }}
+        working-directory: microservices/${{ matrix.service }}
+        run: mvn clean package --no-transfer-progress
+
+      - name: Build Docker image — ${{ matrix.service }}
+        working-directory: microservices/${{ matrix.service }}
+        run: docker build -t ${{ matrix.service }}:ci .
+
+      - name: Upload JAR artifact — ${{ matrix.service }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-jar
+          path: microservices/${{ matrix.service }}/target/*.jar
+          if-no-files-found: error
+          retention-days: 7
