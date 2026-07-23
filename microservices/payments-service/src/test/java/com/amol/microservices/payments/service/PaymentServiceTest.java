@@ -2,9 +2,11 @@ package com.amol.microservices.payments.service;
 
 import com.amol.microservices.payments.domain.Payment;
 import com.amol.microservices.payments.domain.PaymentStatus;
+import com.amol.microservices.payments.events.EventPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,7 +17,8 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentService(new SimpleMeterRegistry());
+        service = new PaymentService(new SimpleMeterRegistry(),
+                new EventPublisher("http://unused", false, RestClient.builder()));
     }
 
     @Test

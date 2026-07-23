@@ -2,12 +2,14 @@ package com.amol.microservices.los.service;
 
 import com.amol.microservices.los.domain.LoanApplication;
 import com.amol.microservices.los.domain.LoanStatus;
+import com.amol.microservices.los.events.EventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,9 +27,11 @@ public class LoanOriginationService {
 
     private final ConcurrentHashMap<String, LoanApplication> applications = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private final EventPublisher events;
 
-    public LoanOriginationService(MeterRegistry meterRegistry) {
+    public LoanOriginationService(MeterRegistry meterRegistry, EventPublisher events) {
         this.meterRegistry = meterRegistry;
+        this.events = events;
     }
 
     public LoanApplication submit(String applicantId, long amountMinor, int termMonths, int creditScore) {
@@ -37,6 +41,8 @@ public class LoanOriginationService {
         LoanApplication app = new LoanApplication(
                 UUID.randomUUID().toString(), applicantId, amountMinor, termMonths, creditScore);
         applications.put(app.getId(), app);
+        events.publish("los.application", app.getId(),
+                Map.of("type", "SUBMITTED", "applicationId", app.getId(), "applicantId", applicantId));
         log.info("application_submitted id={} applicantId={}", app.getId(), applicantId);
         return app;
     }
@@ -68,6 +74,8 @@ public class LoanOriginationService {
                     : "Amount exceeds auto-approval limit");
         }
         counter(app.getStatus().name()).increment();
+        events.publish("los.application", id,
+                Map.of("type", "DECISION", "applicationId", id, "status", app.getStatus().name()));
         log.info("application_underwritten id={} status={}", id, app.getStatus());
         return app;
     }
@@ -81,6 +89,7 @@ public class LoanOriginationService {
         }
         app.setStatus(LoanStatus.ORIGINATED);
         counter("ORIGINATED").increment();
+        events.publish("los.application", id, Map.of("type", "ORIGINATED", "applicationId", id));
         log.info("application_originated id={}", id);
         return app;
     }

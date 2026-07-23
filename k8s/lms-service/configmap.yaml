@@ -6,6 +6,8 @@ metadata:
 data:
   SERVER_PORT: "8099"
   SERVER_SERVLET_CONTEXT_PATH: "/lms"
+  EVENTS_ENABLED: "true"
+  EVENTS_BASE_URL: "http://event-streaming-service:8101/events"
   MANAGEMENT_ENDPOINTS_ENABLED_BY_DEFAULT: "true"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
   MANAGEMENT_ENDPOINTS_WEB_BASE_PATH: "/actuator"

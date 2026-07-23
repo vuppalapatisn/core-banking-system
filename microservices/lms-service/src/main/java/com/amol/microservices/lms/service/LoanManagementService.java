@@ -3,6 +3,7 @@ package com.amol.microservices.lms.service;
 import com.amol.microservices.lms.domain.Installment;
 import com.amol.microservices.lms.domain.Loan;
 import com.amol.microservices.lms.domain.LoanState;
+import com.amol.microservices.lms.events.EventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,9 +27,11 @@ public class LoanManagementService {
 
     private final ConcurrentHashMap<String, Loan> loans = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private final EventPublisher events;
 
-    public LoanManagementService(MeterRegistry meterRegistry) {
+    public LoanManagementService(MeterRegistry meterRegistry, EventPublisher events) {
         this.meterRegistry = meterRegistry;
+        this.events = events;
     }
 
     public Loan book(long principalMinor, double annualRatePct, int termMonths) {
@@ -37,6 +41,8 @@ public class LoanManagementService {
         Loan loan = new Loan(UUID.randomUUID().toString(), principalMinor, annualRatePct, termMonths);
         loans.put(loan.getId(), loan);
         Counter.builder("lms.loans").tag("event", "booked").register(meterRegistry).increment();
+        events.publish("lms.loan", loan.getId(),
+                Map.of("type", "BOOKED", "loanId", loan.getId(), "principalMinor", principalMinor));
         log.info("loan_booked id={} principalMinor={} term={}", loan.getId(), principalMinor, termMonths);
         return loan;
     }
@@ -100,6 +106,9 @@ public class LoanManagementService {
             loan.setState(LoanState.PAID_OFF);
         }
         Counter.builder("lms.repayments").register(meterRegistry).increment();
+        events.publish("lms.loan", id, Map.of(
+                "type", loan.getState() == LoanState.PAID_OFF ? "PAID_OFF" : "REPAID",
+                "loanId", id, "outstandingMinor", loan.getOutstandingMinor()));
         log.info("loan_repayment id={} outstandingMinor={} state={}",
                 id, loan.getOutstandingMinor(), loan.getState());
         return loan;

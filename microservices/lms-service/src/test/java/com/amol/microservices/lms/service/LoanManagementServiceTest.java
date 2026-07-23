@@ -3,9 +3,11 @@ package com.amol.microservices.lms.service;
 import com.amol.microservices.lms.domain.Installment;
 import com.amol.microservices.lms.domain.Loan;
 import com.amol.microservices.lms.domain.LoanState;
+import com.amol.microservices.lms.events.EventPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
@@ -18,7 +20,8 @@ class LoanManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LoanManagementService(new SimpleMeterRegistry());
+        service = new LoanManagementService(new SimpleMeterRegistry(),
+                new EventPublisher("http://unused", false, RestClient.builder()));
     }
 
     @Test

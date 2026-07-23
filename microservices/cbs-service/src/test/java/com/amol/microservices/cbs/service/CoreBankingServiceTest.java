@@ -4,9 +4,11 @@ import com.amol.microservices.cbs.domain.Account;
 import com.amol.microservices.cbs.domain.AccountType;
 import com.amol.microservices.cbs.domain.Customer;
 import com.amol.microservices.cbs.domain.LedgerEntry;
+import com.amol.microservices.cbs.events.EventPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
@@ -20,7 +22,8 @@ class CoreBankingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CoreBankingService(new SimpleMeterRegistry());
+        service = new CoreBankingService(new SimpleMeterRegistry(),
+                new EventPublisher("http://unused", false, RestClient.builder()));
         customerId = service.createCustomer("Ada Lovelace", "ada@example.com").id();
     }
 

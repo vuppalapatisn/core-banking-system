@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "server.servlet.context-path=")
+@TestPropertySource(properties = {"server.servlet.context-path=", "events.enabled=false"})
 class PaymentsApiTest {
 
     @Autowired

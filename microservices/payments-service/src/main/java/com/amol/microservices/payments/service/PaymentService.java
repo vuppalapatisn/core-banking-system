@@ -2,12 +2,14 @@ package com.amol.microservices.payments.service;
 
 import com.amol.microservices.payments.domain.Payment;
 import com.amol.microservices.payments.domain.PaymentStatus;
+import com.amol.microservices.payments.events.EventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,9 +27,11 @@ public class PaymentService {
     private final ConcurrentHashMap<String, Payment> paymentsById = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Payment> paymentsByKey = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private final EventPublisher events;
 
-    public PaymentService(MeterRegistry meterRegistry) {
+    public PaymentService(MeterRegistry meterRegistry, EventPublisher events) {
         this.meterRegistry = meterRegistry;
+        this.events = events;
     }
 
     public Payment submit(String idempotencyKey, String fromAccount, String toAccount,
@@ -60,6 +64,8 @@ public class PaymentService {
             paymentsByKey.putIfAbsent(idempotencyKey, payment);
         }
         Counter.builder("payments.processed").tag("network", network).register(meterRegistry).increment();
+        events.publish("payments.payment", payment.id(), Map.of(
+                "type", "SETTLED", "paymentId", payment.id(), "network", network, "amountMinor", amountMinor));
         log.info("payment_processed id={} network={} status={}", payment.id(), network, payment.status());
         return payment;
     }

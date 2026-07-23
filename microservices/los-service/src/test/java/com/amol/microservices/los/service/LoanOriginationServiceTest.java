@@ -2,9 +2,11 @@ package com.amol.microservices.los.service;
 
 import com.amol.microservices.los.domain.LoanApplication;
 import com.amol.microservices.los.domain.LoanStatus;
+import com.amol.microservices.los.events.EventPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,7 +17,8 @@ class LoanOriginationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LoanOriginationService(new SimpleMeterRegistry());
+        service = new LoanOriginationService(new SimpleMeterRegistry(),
+                new EventPublisher("http://unused", false, RestClient.builder()));
     }
 
     @Test

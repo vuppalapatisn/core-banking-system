@@ -5,6 +5,7 @@ import com.amol.microservices.cbs.domain.AccountType;
 import com.amol.microservices.cbs.domain.Customer;
 import com.amol.microservices.cbs.domain.EntryType;
 import com.amol.microservices.cbs.domain.LedgerEntry;
+import com.amol.microservices.cbs.events.EventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,9 +34,11 @@ public class CoreBankingService {
     private final ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<LedgerEntry> ledger = new CopyOnWriteArrayList<>();
     private final MeterRegistry meterRegistry;
+    private final EventPublisher events;
 
-    public CoreBankingService(MeterRegistry meterRegistry) {
+    public CoreBankingService(MeterRegistry meterRegistry, EventPublisher events) {
         this.meterRegistry = meterRegistry;
+        this.events = events;
     }
 
     public Customer createCustomer(String name, String email) {
@@ -57,6 +61,8 @@ public class CoreBankingService {
         Account account = new Account(UUID.randomUUID().toString(), customerId, type,
                 currency == null || currency.isBlank() ? "USD" : currency);
         accounts.put(account.getId(), account);
+        events.publish("cbs.account", account.getId(),
+                Map.of("type", "OPENED", "accountId", account.getId(), "customerId", customerId));
         log.info("account_opened id={} customerId={} type={}", account.getId(), customerId, type);
         return account;
     }
@@ -76,6 +82,8 @@ public class CoreBankingService {
         post(account.getId(), EntryType.CREDIT, amountMinor, account.getBalanceMinor(), "deposit");
         post(GL_CASH, EntryType.DEBIT, amountMinor, 0, "deposit contra");
         counter("deposit").increment();
+        events.publish("cbs.account", accountId, Map.of("type", "DEPOSIT",
+                "accountId", accountId, "amountMinor", amountMinor, "balanceMinor", account.getBalanceMinor()));
         return account;
     }
 
@@ -89,6 +97,8 @@ public class CoreBankingService {
         post(account.getId(), EntryType.DEBIT, amountMinor, account.getBalanceMinor(), "withdrawal");
         post(GL_CASH, EntryType.CREDIT, amountMinor, 0, "withdrawal contra");
         counter("withdrawal").increment();
+        events.publish("cbs.account", accountId, Map.of("type", "WITHDRAWAL",
+                "accountId", accountId, "amountMinor", amountMinor, "balanceMinor", account.getBalanceMinor()));
         return account;
     }
 
