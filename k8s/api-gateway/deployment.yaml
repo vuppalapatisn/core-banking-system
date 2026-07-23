@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-registry-secret
+      containers:
+        - name: api-gateway
+          image: docker.io/sudhavuppalapati/api-gateway:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8095
+          envFrom:
+            - configMapRef:
+                name: api-gateway-config
+            # Secrets (JWT signing key, AES key, client secrets, MFA seed). Optional so the
+            # service still boots with dev defaults locally; REQUIRED in any shared environment.
+            - secretRef:
+                name: api-gateway-secret
+                optional: true
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:TieredStopAtLevel=1 -Xms128m -Xmx400m"
+          startupProbe:
+            httpGet:
+              path: /api-gateway/actuator/health
+              port: 8095
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /api-gateway/actuator/health
+              port: 8095
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api-gateway/actuator/health
+              port: 8095
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
