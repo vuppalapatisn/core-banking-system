@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cbs-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  selector:
+    app: cbs-service
+  ports:
+    - name: http
+      port: 8097
+      targetPort: 8097

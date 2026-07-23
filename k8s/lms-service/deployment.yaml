@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lms-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lms-service
+  template:
+    metadata:
+      labels:
+        app: lms-service
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-registry-secret
+      containers:
+        - name: lms-service
+          image: docker.io/sudhavuppalapati/lms-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8099
+          envFrom:
+            - configMapRef:
+                name: lms-service-config
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:TieredStopAtLevel=1 -Xms128m -Xmx400m"
+          startupProbe:
+            httpGet:
+              path: /lms/actuator/health
+              port: 8099
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /lms/actuator/health
+              port: 8099
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /lms/actuator/health
+              port: 8099
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

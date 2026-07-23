@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: los-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: los-service
+  template:
+    metadata:
+      labels:
+        app: los-service
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-registry-secret
+      containers:
+        - name: los-service
+          image: docker.io/sudhavuppalapati/los-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8098
+          envFrom:
+            - configMapRef:
+                name: los-service-config
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:TieredStopAtLevel=1 -Xms128m -Xmx400m"
+          startupProbe:
+            httpGet:
+              path: /los/actuator/health
+              port: 8098
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /los/actuator/health
+              port: 8098
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /los/actuator/health
+              port: 8098
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

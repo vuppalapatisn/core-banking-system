@@ -12,6 +12,10 @@ HorizontalPodAutoscaler.
 |---------|-------|------|--------------|
 | [`microservices/api-gateway`](microservices/api-gateway/) | API Management & Security | 8095 | `/api-gateway` |
 | [`microservices/orchestration-service`](microservices/orchestration-service/) | Orchestration & Integration | 8096 | `/orchestration` |
+| [`microservices/cbs-service`](microservices/cbs-service/) | Core Platforms — Core Banking | 8097 | `/cbs` |
+| [`microservices/los-service`](microservices/los-service/) | Core Platforms — Loan Origination | 8098 | `/los` |
+| [`microservices/lms-service`](microservices/lms-service/) | Core Platforms — Loan Management | 8099 | `/lms` |
+| [`microservices/payments-service`](microservices/payments-service/) | Core Platforms — Payments | 8100 | `/payments` |
 
 ### API Management & Security ([details](microservices/api-gateway/README.md))
 
@@ -35,6 +39,15 @@ HorizontalPodAutoscaler.
 | ESB / Integration | `MessageRouter` — content-based routing of a canonical message |
 | Service Mesh | `CircuitBreaker` + retry in code, **and** Istio manifests (`k8s/orchestration-service/service-mesh/`) |
 | Microservices | each service, independently deployable |
+
+### Core Platforms (systems of record)
+
+| Service | Capability |
+|---------|------------|
+| **CBS** (`cbs-service`) | Customers, CASA accounts, and a double-entry general ledger |
+| **LOS** (`los-service`) | Loan application intake → underwriting → origination |
+| **LMS** (`lms-service`) | Loan servicing: amortization schedule, repayments, payoff |
+| **Payments** (`payments-service`) | Payment submission, network routing (INTERNAL/ACH/WIRE), idempotency |
 
 ## Build & test
 
