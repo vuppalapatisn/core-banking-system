@@ -16,6 +16,7 @@ HorizontalPodAutoscaler.
 | [`microservices/los-service`](microservices/los-service/) | Core Platforms — Loan Origination | 8098 | `/los` |
 | [`microservices/lms-service`](microservices/lms-service/) | Core Platforms — Loan Management | 8099 | `/lms` |
 | [`microservices/payments-service`](microservices/payments-service/) | Core Platforms — Payments | 8100 | `/payments` |
+| [`microservices/event-streaming-service`](microservices/event-streaming-service/) | Event Streaming | 8101 | `/events` |
 
 ### API Management & Security ([details](microservices/api-gateway/README.md))
 
@@ -48,6 +49,13 @@ HorizontalPodAutoscaler.
 | **LOS** (`los-service`) | Loan application intake → underwriting → origination |
 | **LMS** (`lms-service`) | Loan servicing: amortization schedule, repayments, payoff |
 | **Payments** (`payments-service`) | Payment submission, network routing (INTERNAL/ACH/WIRE), idempotency |
+
+### Event Streaming ([details](microservices/event-streaming-service/README.md))
+
+Kafka-style real-time backbone: topics with partitions and append-only **offset logs**, keyed
+partitioning, **consumer groups** with independent positions and lag (event-bus fan-out), size-based
+retention, and a **CDC** ingestion endpoint (`cdc.<entity>`). Self-contained (no external broker);
+`EventBroker` is the seam a real Kafka / Event Hub backs in production.
 
 ## Build & test
 

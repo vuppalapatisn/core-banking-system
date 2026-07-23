@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-streaming-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-streaming-service
+  template:
+    metadata:
+      labels:
+        app: event-streaming-service
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-registry-secret
+      containers:
+        - name: event-streaming-service
+          image: docker.io/sudhavuppalapati/event-streaming-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8101
+          envFrom:
+            - configMapRef:
+                name: event-streaming-service-config
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:TieredStopAtLevel=1 -Xms128m -Xmx400m"
+          startupProbe:
+            httpGet:
+              path: /events/actuator/health
+              port: 8101
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /events/actuator/health
+              port: 8101
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /events/actuator/health
+              port: 8101
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
