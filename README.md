@@ -1,47 +1,57 @@
-# core-banking-system — API Management & Security Layer
+# core-banking-system
 
-The **API Management & Security** front door for an AI-enabled digital bank. A Java 21 /
-Spring Boot 3.3.5 service that authenticates and shields traffic before it reaches the backend
-banking microservices, implementing each component of the target-architecture "API Management &
-Security Layer".
-
-> Service source: [`microservices/api-gateway/`](microservices/api-gateway/) ·
-> Kubernetes manifests: [`k8s/api-gateway/`](k8s/api-gateway/) ·
-> Full service docs: [`microservices/api-gateway/README.md`](microservices/api-gateway/README.md)
-
-## Architecture mapping
-
-| Architecture component | Implementation |
-|------------------------|----------------|
-| **API Gateway / APIM** | [`GatewayController`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/controller/GatewayController.java) + [`ProxyService`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/service/ProxyService.java) reverse-proxy to backend services |
-| **OAuth2 / OIDC** | [`AuthController`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/controller/AuthController.java) issues HS256 JWTs; Spring Security resource server validates them |
-| **MFA** | [`OtpService`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/security/OtpService.java) — real RFC 6238 TOTP |
-| **WAF** | [`WafFilter`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/filter/WafFilter.java) — SQLi / XSS / path-traversal → HTTP 403 |
-| **Rate Limiting** | [`RateLimitFilter`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/filter/RateLimitFilter.java) — per-client token bucket → HTTP 429 |
-| **IAM / RBAC** | [`IamClientRegistry`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/security/IamClientRegistry.java) + roles in JWT → [`SecurityConfig`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/config/SecurityConfig.java) |
-| **Encryption & Tokenization** | [`TokenizationService`](microservices/api-gateway/src/main/java/com/amol/microservices/gateway/service/TokenizationService.java) — AES-GCM |
-
-Cross-cutting: Micrometer/Prometheus metrics, Spring Boot Actuator health/probes, structured JSON
-logs, `X-Correlation-Id` propagation, Swagger UI, a non-root container image, and a memory-based
+Reference services for an **AI-enabled digital bank**, each layer of the target architecture built
+as a production-shaped Java 21 / Spring Boot 3.3.5 microservice. Every service ships with
+Actuator health/probes, Micrometer/Prometheus metrics, structured JSON logging,
+`X-Correlation-Id` propagation, Swagger UI, a non-root Docker image, and a memory-based
 HorizontalPodAutoscaler.
+
+## Services
+
+| Service | Layer | Port | Context path |
+|---------|-------|------|--------------|
+| [`microservices/api-gateway`](microservices/api-gateway/) | API Management & Security | 8095 | `/api-gateway` |
+| [`microservices/orchestration-service`](microservices/orchestration-service/) | Orchestration & Integration | 8096 | `/orchestration` |
+
+### API Management & Security ([details](microservices/api-gateway/README.md))
+
+| Component | Implementation |
+|-----------|----------------|
+| API Gateway / APIM | `GatewayController` + `ProxyService` reverse proxy |
+| OAuth2 / OIDC | `AuthController` issues HS256 JWTs; resource server validates |
+| MFA | `OtpService` — RFC 6238 TOTP |
+| WAF | `WafFilter` — SQLi / XSS / traversal → 403 |
+| Rate Limiting | `RateLimitFilter` — token bucket → 429 |
+| IAM / RBAC | `IamClientRegistry` + `SecurityConfig` |
+| Encryption & Tokenization | `TokenizationService` — AES-GCM |
+
+### Orchestration & Integration ([details](microservices/orchestration-service/README.md))
+
+| Component | Implementation |
+|-----------|----------------|
+| BPM / Workflow | `WorkflowEngine` — loan-approval state machine |
+| Business Rules Engine | `RulesEngine` — externalized, config-driven rules |
+| Decision Orchestration | `DecisionOrchestrator` — combines rule sets by severity |
+| ESB / Integration | `MessageRouter` — content-based routing of a canonical message |
+| Service Mesh | `CircuitBreaker` + retry in code, **and** Istio manifests (`k8s/orchestration-service/service-mesh/`) |
+| Microservices | each service, independently deployable |
 
 ## Build & test
 
 ```bash
-cd microservices/api-gateway
-mvn clean package                 # runs the test suite
-docker build -t api-gateway:local .
+# per service
+cd microservices/<service>          # api-gateway | orchestration-service
+mvn clean package                   # runs the test suite
+docker build -t <service>:local .
 ```
-
-Runs on port **8095** under context-path **`/api-gateway`**. Swagger UI:
-`http://localhost:8095/api-gateway/swagger-ui.html`.
 
 ## Deploy (Kubernetes)
 
 ```bash
-# Provide real secrets first (see k8s/api-gateway/secret-example.yaml)
-kubectl apply -f k8s/api-gateway/configmap.yaml
-kubectl apply -f k8s/api-gateway/deployment.yaml
-kubectl apply -f k8s/api-gateway/service.yaml
-kubectl apply -f k8s/api-gateway/hpa.yaml
+kubectl apply -f k8s/<service>/configmap.yaml
+kubectl apply -f k8s/<service>/deployment.yaml
+kubectl apply -f k8s/<service>/service.yaml
+kubectl apply -f k8s/<service>/hpa.yaml
+# api-gateway: provide real secrets first (see k8s/api-gateway/secret-example.yaml)
+# orchestration-service: optional Istio mesh policy in k8s/orchestration-service/service-mesh/
 ```

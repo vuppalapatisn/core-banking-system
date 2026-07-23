@@ -1,0 +1,54 @@
+# Service Mesh layer (Istio) for orchestration-service.
+#
+# REQUIRES Istio installed in the cluster (istioctl install) and the namespace labeled for sidecar
+# injection (kubectl label namespace ecommerce istio-injection=enabled). Inert otherwise — the same
+# retry/timeout/outlier-detection behaviour is also implemented in code (ResilientDispatcher /
+# CircuitBreaker) so resilience holds even without a mesh.
+#
+# This expresses, at the infrastructure layer:
+#   - load balancing across pods (LEAST_REQUEST)
+#   - request timeouts and retries
+#   - outlier detection = the circuit breaker the mesh trips per-endpoint
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: orchestration-service
+  namespace: ecommerce
+spec:
+  host: orchestration-service.ecommerce.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 200
+        maxRequestsPerConnection: 10
+    # Outlier detection = mesh-level circuit breaking: eject a pod after 5 consecutive 5xx.
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: orchestration-service
+  namespace: ecommerce
+spec:
+  hosts:
+    - orchestration-service.ecommerce.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: orchestration-service.ecommerce.svc.cluster.local
+            port:
+              number: 8096
+      timeout: 10s
+      retries:
+        attempts: 2
+        perTryTimeout: 3s
+        retryOn: 5xx,connect-failure,refused-stream
