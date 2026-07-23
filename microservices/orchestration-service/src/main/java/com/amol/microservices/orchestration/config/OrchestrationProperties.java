@@ -42,6 +42,9 @@ public class OrchestrationProperties {
         @NestedConfigurationProperty
         private final Resilience resilience = new Resilience();
 
+        @NestedConfigurationProperty
+        private final Services services = new Services();
+
         public Map<String, Map<String, String>> getRoutes() {
             return routes;
         }
@@ -52,6 +55,41 @@ public class OrchestrationProperties {
 
         public Resilience getResilience() {
             return resilience;
+        }
+
+        public Services getServices() {
+            return services;
+        }
+    }
+
+    /** Base URLs (including context path) of the Core Platforms services the journey calls. */
+    public static class Services {
+        private String los = "http://los-service:8098/los";
+        private String lms = "http://lms-service:8099/lms";
+        private String payments = "http://payments-service:8100/payments";
+
+        public String getLos() {
+            return los;
+        }
+
+        public void setLos(String los) {
+            this.los = los;
+        }
+
+        public String getLms() {
+            return lms;
+        }
+
+        public void setLms(String lms) {
+            this.lms = lms;
+        }
+
+        public String getPayments() {
+            return payments;
+        }
+
+        public void setPayments(String payments) {
+            this.payments = payments;
         }
     }
 

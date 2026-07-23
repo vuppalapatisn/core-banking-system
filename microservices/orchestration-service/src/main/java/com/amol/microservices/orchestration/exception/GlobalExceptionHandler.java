@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 
 /**
  * Maps exceptions to uniform {@link ErrorResponse} bodies. Client errors are logged at WARN;
@@ -45,6 +46,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConflict(IllegalStateException ex) {
         log.warn("request_failed reason=conflict message={}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("conflict", ex.getMessage()));
+    }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ErrorResponse> handleDownstream(RestClientException ex) {
+        log.warn("request_failed reason=downstream_error message={}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("downstream_error", "A downstream service call failed"));
     }
 
     @ExceptionHandler(Exception.class)

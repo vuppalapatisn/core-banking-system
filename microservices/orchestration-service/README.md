@@ -58,6 +58,25 @@ orchestration.rules.credit[0].value=600
 orchestration.rules.credit[0].outcome=REJECT
 ```
 
+## End-to-end loan journey (services wired together)
+
+`POST /orchestration/journeys/loan` orchestrates a real, multi-service loan across the Core Platforms
+over HTTP, propagating the `X-Correlation-Id` on every hop:
+
+1. **LOS** — submit → underwrite → (if approved) originate the application
+2. **LMS** — book the loan and fetch its amortization schedule
+3. **Payments** — disburse the funds to the borrower (idempotency key = loan id)
+
+If the LOS does not originate the loan, the journey stops with `outcome: REJECTED`. Downstream base
+URLs are configured via `orchestration.integration.services.*` (defaults target the k8s service DNS).
+
+```bash
+curl -X POST http://localhost:8096/orchestration/journeys/loan \
+  -H 'Content-Type: application/json' \
+  -d '{"applicantId":"c1","amountMinor":100000,"termMonths":12,"creditScore":720,"annualRatePct":12.0,"toAccount":"ACC-2"}'
+# -> {"applicationStatus":"ORIGINATED","loanId":"...","scheduleMonths":12,"paymentStatus":"SETTLED","outcome":"DISBURSED"}
+```
+
 ## Build & test
 
 ```bash
