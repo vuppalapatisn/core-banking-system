@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-intelligence-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-intelligence-service
+  template:
+    metadata:
+      labels:
+        app: ai-intelligence-service
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-registry-secret
+      containers:
+        - name: ai-intelligence-service
+          image: docker.io/sudhavuppalapati/ai-intelligence-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8102
+          envFrom:
+            - configMapRef:
+                name: ai-intelligence-service-config
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:TieredStopAtLevel=1 -Xms128m -Xmx400m"
+          startupProbe:
+            httpGet:
+              path: /ai/actuator/health
+              port: 8102
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /ai/actuator/health
+              port: 8102
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /ai/actuator/health
+              port: 8102
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

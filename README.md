@@ -17,6 +17,7 @@ HorizontalPodAutoscaler.
 | [`microservices/lms-service`](microservices/lms-service/) | Core Platforms — Loan Management | 8099 | `/lms` |
 | [`microservices/payments-service`](microservices/payments-service/) | Core Platforms — Payments | 8100 | `/payments` |
 | [`microservices/event-streaming-service`](microservices/event-streaming-service/) | Event Streaming | 8101 | `/events` |
+| [`microservices/ai-intelligence-service`](microservices/ai-intelligence-service/) | AI/ML & Intelligence | 8102 | `/ai` |
 
 ### API Management & Security ([details](microservices/api-gateway/README.md))
 
@@ -56,6 +57,12 @@ Kafka-style real-time backbone: topics with partitions and append-only **offset 
 partitioning, **consumer groups** with independent positions and lag (event-bus fan-out), size-based
 retention, and a **CDC** ingestion endpoint (`cdc.<entity>`). Self-contained (no external broker);
 `EventBroker` is the seam a real Kafka / Event Hub backs in production.
+
+### AI/ML & Intelligence ([details](microservices/ai-intelligence-service/README.md))
+
+Inference for fraud detection, credit scoring, churn prediction, customer segmentation /
+next-best-offer, and a GenAI assistant. Deterministic reference models (self-contained, no external
+ML infra or paid LLM calls); each sits behind a seam a trained model / real LLM swaps into.
 
 ## Build & test
 
