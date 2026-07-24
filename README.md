@@ -75,11 +75,18 @@ docker build -t <service>:local .
 
 ## Deploy (Kubernetes)
 
+Deploy the **whole platform** (all 8 services) into the `ecommerce` namespace, then drive the
+end-to-end loan journey with correlated logs — see [k8s/DEPLOY.md](k8s/DEPLOY.md):
+
 ```bash
-kubectl apply -f k8s/<service>/configmap.yaml
-kubectl apply -f k8s/<service>/deployment.yaml
-kubectl apply -f k8s/<service>/service.yaml
-kubectl apply -f k8s/<service>/hpa.yaml
+kubectl apply -k k8s/
+```
+
+Or a single service:
+
+```bash
+kubectl apply -f k8s/<service>/configmap.yaml -f k8s/<service>/deployment.yaml \
+              -f k8s/<service>/service.yaml -f k8s/<service>/hpa.yaml
 # api-gateway: provide real secrets first (see k8s/api-gateway/secret-example.yaml)
 # orchestration-service: optional Istio mesh policy in k8s/orchestration-service/service-mesh/
 ```

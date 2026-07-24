@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Deploys the whole platform (all 8 services) into the `ecommerce` namespace.
+#   kubectl apply -k k8s/
+#
+# Excluded on purpose:
+#   - k8s/api-gateway/secret-example.yaml    (template — create the real Secret out-of-band)
+#   - k8s/orchestration-service/service-mesh (Istio add-on — apply separately if a mesh is installed)
+#
+# HorizontalPodAutoscalers are included but stay inert until a metrics-server is installed.
+
+resources:
+  - namespace.yaml
+
+  # API Management & Security
+  - api-gateway/configmap.yaml
+  - api-gateway/deployment.yaml
+  - api-gateway/service.yaml
+  - api-gateway/hpa.yaml
+
+  # Orchestration & Integration
+  - orchestration-service/configmap.yaml
+  - orchestration-service/deployment.yaml
+  - orchestration-service/service.yaml
+  - orchestration-service/hpa.yaml
+
+  # Core Platforms
+  - cbs-service/configmap.yaml
+  - cbs-service/deployment.yaml
+  - cbs-service/service.yaml
+  - cbs-service/hpa.yaml
+  - los-service/configmap.yaml
+  - los-service/deployment.yaml
+  - los-service/service.yaml
+  - los-service/hpa.yaml
+  - lms-service/configmap.yaml
+  - lms-service/deployment.yaml
+  - lms-service/service.yaml
+  - lms-service/hpa.yaml
+  - payments-service/configmap.yaml
+  - payments-service/deployment.yaml
+  - payments-service/service.yaml
+  - payments-service/hpa.yaml
+
+  # Event Streaming
+  - event-streaming-service/configmap.yaml
+  - event-streaming-service/deployment.yaml
+  - event-streaming-service/service.yaml
+  - event-streaming-service/hpa.yaml
+
+  # AI/ML & Intelligence
+  - ai-intelligence-service/configmap.yaml
+  - ai-intelligence-service/deployment.yaml
+  - ai-intelligence-service/service.yaml
+  - ai-intelligence-service/hpa.yaml
